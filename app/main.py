@@ -22,7 +22,7 @@ public_url = ngrok.connect(
 ).public_url
 logger.info('ngrok tunnel "{}" -> "http://0.0.0.0:{}"'.format(public_url, 80))
 
-model_file_path = "trained_model.pkl"
+model_file_path = "app/trained_model.pkl"
 data_file_path = "app/data"
 
 movie_id_map = pd.read_csv(data_file_path + "/movie_id_map.csv")
