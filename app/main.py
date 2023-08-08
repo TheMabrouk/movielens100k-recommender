@@ -1,11 +1,11 @@
 import os
-import sys
+# import sys
 
 import pandas as pd
 import pickle
 from typing import Dict, Any
 from fastapi import FastAPI, Body
-from fastapi.logger import logger
+# from fastapi.logger import logger
 from pydantic import BaseModel
 
 # from pyngrok import ngrok
