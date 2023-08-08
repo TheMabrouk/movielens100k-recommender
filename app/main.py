@@ -56,7 +56,7 @@ async def home():
     return {"health_ckeck": "Ok"}
 
 
-@app.post("/predict", response_model=Request)
+@app.post("/", response_model=Request)
 async def predict(queryResult: Request = Body(..., embed=True)):
     # print(queryResult)
     intent = queryResult.intent.displayName
