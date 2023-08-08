@@ -7,9 +7,10 @@ from typing import Dict, Any
 from fastapi import FastAPI, Body
 from fastapi.logger import logger
 from pydantic import BaseModel
+
 # from pyngrok import ngrok
 
-from surprise import Dataset, Reader, KNNBaseline
+from surprise import Dataset, Reader, KNNBasic
 from surprise.model_selection import train_test_split
 from random import randint
 
@@ -35,7 +36,7 @@ if os.path.exists(model_file_path):
     algo = pickle.load(open(model_file_path, "rb"))
 else:
     trainset, _ = train_test_split(surprise_data, test_size=0.2)
-    algo = KNNBaseline()
+    algo = KNNBasic()
     algo.fit(trainset)
     pickle.dump(algo, open(model_file_path, "wb"))
 
@@ -52,18 +53,15 @@ class Request(BaseModel):
 session_vars = {}
 
 
-
 @app.post("/")
 async def predict(queryResult: Request = Body(..., embed=True)):
     # print(queryResult)
     intent = queryResult.intent.displayName
     if queryResult.parameters.get("uid"):
         session_vars["user_id"] = queryResult.parameters.get("uid", None)
-        user_id = queryResult.parameters.get("uid", None)
+        user_id = session_vars["user_id"]
     else:
         user_id = session_vars.get("user_id", None)
-
-
 
     if intent == "GetID":
         if session_vars["user_id"]:
@@ -90,8 +88,9 @@ async def predict(queryResult: Request = Body(..., embed=True)):
     if intent == "RateMovie":
         if user_id:
             movie_id = data.sample()["movie_id"].iloc[0]
-            if user_ratings == None:
-                user_ratings[movie_id] = None
+            if list(user_ratings.values())[0] == None:
+                rating = queryResult.parameters.get("rating")
+                user_ratings[list(user_ratings.keys())[0]] = rating
                 return {
                     "fulfillmentText": f"What do you think of {get_movie_name(movie_id)}?"
                 }
@@ -181,7 +180,11 @@ def update_model_with_ratings(user_id, user_ratings):
     global algo
     for movie_id, rating in user_ratings.items():
         if movie_id is not None:
-            new_row = {"user_id": user_id, "movie_id": movie_id, "rating": rating}
+            new_row = {
+                "user_id": user_id,
+                "movie_id": movie_id,
+                "rating": float(rating),
+            }
             new_row = pd.DataFrame(new_row, index=[0])
             data = pd.concat([data, new_row], ignore_index=True)
     data.to_csv(data_file_path + "/data.csv", index=False)
