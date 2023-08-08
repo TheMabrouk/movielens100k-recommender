@@ -168,9 +168,9 @@ def get_movie_name(movie_id):
 
 
 def generate_new_user_id():
-    new_user_id = randint(1, 10000)
+    new_user_id = randint(10000, 100000)
     while new_user_id in unique_user_ids:
-        new_user_id = randint(1, 10000)
+        new_user_id = randint(10000, 100000)
     unique_user_ids.append(new_user_id)
     return new_user_id
 
