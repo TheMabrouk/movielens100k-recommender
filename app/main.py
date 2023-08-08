@@ -17,10 +17,10 @@ app = FastAPI()
 
 # port = sys.argv[sys.argv.index("--port") + 1] if "--port" in sys.argv else 80
 
-public_url = ngrok.connect(
-    80, options={"domain": "enough-enormous-skink.ngrok-free.app"}
-).public_url
-logger.info('ngrok tunnel "{}" -> "http://0.0.0.0:{}"'.format(public_url, 80))
+# public_url = ngrok.connect(
+#     80, options={"domain": "enough-enormous-skink.ngrok-free.app"}
+# ).public_url
+# logger.info('ngrok tunnel "{}" -> "http://0.0.0.0:{}"'.format(public_url, 80))
 
 model_file_path = "app/trained_model.pkl"
 data_file_path = "app/data"
