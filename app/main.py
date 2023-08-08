@@ -51,12 +51,9 @@ class Request(BaseModel):
 
 session_vars = {}
 
-@app.get("/")
-async def home():
-    return {"health_ckeck": "Ok"}
 
 
-@app.post("/", response_model=Request)
+@app.post("/")
 async def predict(queryResult: Request = Body(..., embed=True)):
     # print(queryResult)
     intent = queryResult.intent.displayName
