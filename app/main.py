@@ -7,7 +7,7 @@ from typing import Dict, Any
 from fastapi import FastAPI, Body
 from fastapi.logger import logger
 from pydantic import BaseModel
-from pyngrok import ngrok
+# from pyngrok import ngrok
 
 from surprise import Dataset, Reader, KNNBaseline
 from surprise.model_selection import train_test_split
