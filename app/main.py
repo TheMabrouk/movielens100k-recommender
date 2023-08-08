@@ -57,11 +57,13 @@ session_vars = {}
 async def predict(queryResult: Request = Body(..., embed=True)):
     # print(queryResult)
     intent = queryResult.intent.displayName
-    if session_vars.get("user_id"):
-        user_id = session_vars["user_id"]
-    else:
+    if queryResult.parameters.get("uid"):
         session_vars["user_id"] = queryResult.parameters.get("uid", None)
         user_id = queryResult.parameters.get("uid", None)
+    else:
+        user_id = session_vars.get("user_id", None)
+
+
 
     if intent == "GetID":
         if session_vars["user_id"]:
