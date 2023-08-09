@@ -33,9 +33,10 @@ class Model():
 class Data():
     def __init__(self, data_file_path):
         self.data_file_path = data_file_path
+        self.data = self.get_data()
         
     def get_data(self):
-        self.data = pd.read_csv(data_file_path + "/data.csv")
+        self.data = pd.read_csv(self.data_file_path + "/data.csv")
         return self.data
     
     def get_users_ids(self):
