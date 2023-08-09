@@ -46,13 +46,13 @@ async def predict(queryResult: Request = Body(..., embed=True)):
 
     # The user ID will either be in the session variables or in the parameters
     # First, we check if it's in the parameters, otherwise we get from the session variables
-    user_id = queryResult.parameters.get("uid", session_vars["user_id"])
 
-    # if queryResult.parameters.get("uid"):
-    #     session_vars["user_id"] = queryResult.parameters.get("uid", None)
-    #     user_id = session_vars["user_id"]
-    # else:
-    #     user_id = session_vars.get("user_id", None)
+    # user_id = queryResult.parameters.get("uid", session_vars["user_id"])
+    if queryResult.parameters.get("uid"):
+        session_vars["user_id"] = queryResult.parameters.get("uid", None)
+        user_id = session_vars["user_id"]
+    else:
+        user_id = session_vars.get("user_id", None)
 
     if intent == "GetID":
         return handel_get_id()
