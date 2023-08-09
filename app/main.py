@@ -26,24 +26,27 @@ data = Data(data_file_path)
 algo = Model(model_file_path, data)
 unique_user_ids = data.get_users_ids()
 
+
 class Intent(BaseModel):
     displayName: str
+
 
 class Request(BaseModel):
     intent: Intent
     parameters: Dict[str, Any]
 
+
 @app.post("/")
 async def predict(queryResult: Request = Body(..., embed=True)):
+    global session_vars
     intent = queryResult.intent.displayName
     print(intent)
-
     # The user ID will either be in the session variables or in the parameters
     # First, we check if it's in the parameters, otherwise we get from the session variables
 
     # user_id = queryResult.parameters.get("uid", session_vars["user_id"])
     if queryResult.parameters.get("uid"):
-        session_vars["user_id"] = queryResult.parameters.get("uid", "")
+        session_vars["user_id"] = int(queryResult.parameters.get("uid", ""))
 
     if intent == "GetID":
         return handel_get_id()
@@ -55,6 +58,7 @@ async def predict(queryResult: Request = Body(..., embed=True)):
         return handle_rate_movie(queryResult, session_vars["user_id"])
 
     elif intent == "Recommend-HasID":
+        print(session_vars["user_id"])
         return handle_recommendation(session_vars["user_id"])
 
     else:
@@ -64,13 +68,9 @@ async def predict(queryResult: Request = Body(..., embed=True)):
 # Checks for the ID in the session variables and returns it if it exists
 def handel_get_id():
     if session_vars["user_id"] != "":
-        return {
-                "fulfillmentText": f"Your user ID is {int(session_vars['user_id'])}."
-            }
+        return {"fulfillmentText": f"Your user ID is {int(session_vars['user_id'])}."}
     else:
-        return {
-                "fulfillmentText": "You did not share your ID with me this session."
-            }
+        return {"fulfillmentText": "You did not share your ID with me this session."}
 
 
 def handel_check_user_id(queryResult, user_id):
@@ -85,48 +85,55 @@ def handel_check_user_id(queryResult, user_id):
     else:
         return {"fulfillmentText": "I'm sorry, I didn't understand your response."}
 
+
 def handle_new_user():
     new_user_id = generate_new_user_id()
     session_vars["user_id"] = new_user_id
     movie_id = data.select_random_movie()
+    session_vars["user_ratings"][movie_id] = None
     return {
-        "fulfillmentText": f"""Welcome! Your new user ID is {new_user_id}. 
+        "fulfillmentText": f"""Welcome! Your new user ID is {new_user_id}.
         Please rate the following movies on a scale of 1 to 5.
         Firstly, what do you think of {data.get_movie_name(movie_id)}?"""
     }
 
+
 def handle_existing_user(user_id):
     if user_id in unique_user_ids:
         recommendation = algo.recommend(user_id)
+        print(user_id)
         text = "Here are some movies you might like: \n"
         text += "\n".join(recommendation)
         return {"fulfillmentText": text}
     else:
         return {"fulfillmentText": "User ID not found."}
 
+
 def handle_rate_movie(queryResult, user_id):
     if user_id:
-        movie_id = data.select_random_movie()
-        session_vars["user_ratings"]
-        if len(session_vars["user_ratings"]) == 0:
+        global session_vars
+        previous_movie = list(session_vars["user_ratings"].keys())[-1]
+        if len(list(session_vars["user_ratings"].values())) < 5:
+            movie_id = data.select_random_movie()
             rating = queryResult.parameters.get("rating")
-            session_vars["user_ratings"][movie_id] = rating
-            return {
-                "fulfillmentText": f"What do you think of {data.get_movie_name(movie_id)}?"
-            }
-        elif len(session_vars["user_ratings"]) < 5:
-            rating = queryResult.parameters.get("rating")
-            session_vars["user_ratings"][movie_id] = rating
+            session_vars["user_ratings"][previous_movie] = rating
+            session_vars["user_ratings"][movie_id] = None
             return {
                 "fulfillmentText": f"Next, what do you think of {data.get_movie_name(movie_id)}?"
             }
+
+        rating = queryResult.parameters.get("rating")
+        session_vars["user_ratings"][previous_movie] = rating
         algo.update_model_with_ratings(user_id, session_vars["user_ratings"])
         return {
             "fulfillmentText": """Thank you for your ratings. Your preferences have been updated.
             Now whenever you give me you're ID I'll be able to recommend you movies."""
         }
     else:
-        return {"fulfillmentText": "Couldn't find your user ID during handling the rating."}
+        return {
+            "fulfillmentText": "Couldn't find your user ID during handling the rating."
+        }
+
 
 def handle_recommendation(user_id):
     if user_id in unique_user_ids:
@@ -136,6 +143,7 @@ def handle_recommendation(user_id):
         return {"fulfillmentText": text}
     else:
         return {"fulfillmentText": "User ID not found."}
+
 
 def generate_new_user_id():
     new_user_id = randint(10000, 100000)
