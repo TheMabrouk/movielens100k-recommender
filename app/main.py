@@ -3,9 +3,8 @@ from fastapi import FastAPI, Body
 from pydantic import BaseModel
 from random import randint
 
-# The dots before the model module are important for uvicorn to find the module
-from .model import update_model_with_ratings, recommend, select_random_movie, get_movie_name
-from .model import unique_user_ids
+# The dot before the model module is important for uvicorn to find the module
+from .model import Data, Model
 
 # import sys
 # from fastapi.logger import logger
@@ -20,18 +19,19 @@ app = FastAPI()
 # ).public_url
 # logger.info('ngrok tunnel "{}" -> "http://0.0.0.0:{}"'.format(public_url, 80))
 
+session_vars = {"user_id": ""}
+model_file_path = "app/data/trained_model.pkl"
+data_file_path = "app/data"
+data = Data(data_file_path)
+algo = Model(model_file_path, data).get_model()
+unique_user_ids = data.get_users_ids()
 
 class Intent(BaseModel):
     displayName: str
 
-
 class Request(BaseModel):
     intent: Intent
     parameters: Dict[str, Any]
-
-
-session_vars = {"user_id": ""}
-
 
 @app.post("/")
 async def predict(queryResult: Request = Body(..., embed=True)):
@@ -91,16 +91,16 @@ def handel_check_user_id(queryResult, user_id):
 def handle_new_user():
     new_user_id = generate_new_user_id()
     session_vars["user_id"] = new_user_id
-    movie_id = select_random_movie()
+    movie_id = data.select_random_movie()
     global user_ratings
     user_ratings = {movie_id: None}
     return {
-        "fulfillmentText": f"Welcome! Your new user ID is {new_user_id}. Please rate the following movies on a scale of 1 to 5.\n\nFirstly, what do you think of {get_movie_name(movie_id)}?"
+        "fulfillmentText": f"Welcome! Your new user ID is {new_user_id}. Please rate the following movies on a scale of 1 to 5.\n\nFirstly, what do you think of {data.get_movie_name(movie_id)}?"
     }
 
 def handle_existing_user(user_id):
     if user_id in unique_user_ids:
-        recommendation = recommend(user_id)
+        recommendation = algo.recommend(user_id)
         text = "Here are some movies you might like: \n"
         text += "\n".join(recommendation)
         return {"fulfillmentText": text}
@@ -109,29 +109,29 @@ def handle_existing_user(user_id):
 
 def handle_rate_movie(queryResult, user_id):
     if user_id:
-        movie_id = select_random_movie()
+        movie_id = data.select_random_movie()
         if list(user_ratings.values())[0] == None:
             rating = queryResult.parameters.get("rating")
             user_ratings[list(user_ratings.keys())[0]] = rating
             return {
-                "fulfillmentText": f"What do you think of {get_movie_name(movie_id)}?"
+                "fulfillmentText": f"What do you think of {data.get_movie_name(movie_id)}?"
             }
         elif len(user_ratings) < 5:
             rating = queryResult.parameters.get("rating")
             user_ratings[movie_id] = rating
             return {
-                "fulfillmentText": f"Next, what do you think of {get_movie_name(movie_id)}?"
+                "fulfillmentText": f"Next, what do you think of {data.get_movie_name(movie_id)}?"
             }
-        update_model_with_ratings(user_id, user_ratings)
+        algo.update_model_with_ratings(user_id, user_ratings)
         return {
             "fulfillmentText": "Thank you for your ratings. Your preferences have been updated.\n\nNow whenever you give me you're ID I'll be able to recommend you movies."
         }
     else:
-        return {"fulfillmentText": "Please provide a valid user ID."}
+        return {"fulfillmentText": "Couldn't find your user ID during handling the rating."}
 
 def handle_recommendation(user_id):
     if user_id in unique_user_ids:
-        recommendation = recommend(user_id)
+        recommendation = algo.recommend(user_id)
         text = "Here are some movies you might like: \n"
         text += "\n".join(recommendation)
         return {"fulfillmentText": text}

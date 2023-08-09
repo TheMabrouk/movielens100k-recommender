@@ -32,10 +32,44 @@ class Model(KNNBasic):
         with open(self.model_file_path, "wb") as file:
             pickle.dump(self, file)
 
+    def update_model_with_ratings(self, user_id, user_ratings):
+        for movie_id, rating in user_ratings.items():
+            if movie_id is not None:
+                new_row = {
+                    "user_id": user_id,
+                    "movie_id": movie_id,
+                    "rating": float(rating),
+                }
+                new_row = pd.DataFrame(new_row, index=[0])
+                self.data.add_row(new_row)
+        
+        self.data.save()
+        trainset, _ = self.data.get_train_test()
+        self.fit(trainset)
+        self.save_model()
+    
+    def recommend(self, user_id: int, n: int = 10):
+        predictions = []
+        for movie_id in self.data.get_unique_movie_ids():
+            predictions.append(
+                (
+                    movie_id,
+                    self.predict(user_id, movie_id).est,
+                )
+            )
+        predictions.sort(key=lambda x: x[1], reverse=True)
+        top_movies = predictions[:n]
+        top_movies = [
+            self.data.get_movie_name(movie_id)
+            for movie_id, _ in top_movies
+        ]
+        return top_movies
+
 class Data():
     def __init__(self, data_file_path):
         self.data_file_path = data_file_path
         self.data = self.get_data()
+        self.movie_id_map = pd.read_csv(data_file_path + "/movie_id_map.csv")
         
     def get_data(self):
         self.data = pd.read_csv(self.data_file_path + "/data.csv")
@@ -61,59 +95,7 @@ class Data():
         return self.data.sample()["movie_id"].iloc[0]
 
     def get_movie_name(self, movie_id):
-        return movie_id_map[movie_id_map["movie_id"] == movie_id]["movie_title"].iloc[0]
+        return self.movie_id_map[self.movie_id_map["movie_id"] == movie_id]["movie_title"].iloc[0]
     
     def get_unique_movie_ids(self):
         return self.data["movie_id"].unique().tolist()
-
-model_file_path = "app/data/trained_model.pkl"
-data_file_path = "app/data"
-
-movie_id_map = pd.read_csv(data_file_path + "/movie_id_map.csv")
-
-data = Data(data_file_path)
-
-algo = Model(model_file_path, data).get_model()
-
-unique_user_ids = data.get_users_ids()
-
-
-def update_model_with_ratings(user_id, user_ratings):
-    for movie_id, rating in user_ratings.items():
-        if movie_id is not None:
-            new_row = {
-                "user_id": user_id,
-                "movie_id": movie_id,
-                "rating": float(rating),
-            }
-            new_row = pd.DataFrame(new_row, index=[0])
-            data.add_row(new_row)
-    
-    data.save()
-    trainset, _ = data.get_train_test()
-    algo.fit(trainset)
-    algo.save_model()
-
-
-def recommend(user_id: int, n: int = 10):
-    predictions = []
-    for movie_id in data.get_unique_movie_ids():
-        predictions.append(
-            (
-                movie_id,
-                algo.predict(user_id, movie_id).est,
-            )
-        )
-    predictions.sort(key=lambda x: x[1], reverse=True)
-    top_movies = predictions[:n]
-    top_movies = [
-        get_movie_name(movie_id)
-        for movie_id, _ in top_movies
-    ]
-    return top_movies
-
-def get_movie_name(movie_id):
-    return data.get_movie_name(movie_id)
-
-def select_random_movie():
-    return data.select_random_movie()
