@@ -1,21 +1,15 @@
-# import sys
-
-# import pandas as pd
-# import pickle
 from typing import Dict, Any
 from fastapi import FastAPI, Body
-# from fastapi.logger import logger
 from pydantic import BaseModel
+from random import randint
 
-# from pyngrok import ngrok
+# The dots before the model module are important for uvicorn to find the module
 from .model import update_model_with_ratings, recommend, select_random_movie, get_movie_name
 from .model import unique_user_ids
 
-# from surprise import Dataset, Reader, KNNBasic
-# from surprise.model_selection import train_test_split
-
-from random import randint
-
+# import sys
+# from fastapi.logger import logger
+# from pyngrok import ngrok
 
 app = FastAPI()
 
@@ -36,7 +30,7 @@ class Request(BaseModel):
     parameters: Dict[str, Any]
 
 
-session_vars = {}
+session_vars = {"user_id": ""}
 
 
 @app.post("/")
@@ -49,10 +43,10 @@ async def predict(queryResult: Request = Body(..., embed=True)):
 
     # user_id = queryResult.parameters.get("uid", session_vars["user_id"])
     if queryResult.parameters.get("uid"):
-        session_vars["user_id"] = queryResult.parameters.get("uid", None)
+        session_vars["user_id"] = queryResult.parameters.get("uid", "")
         user_id = session_vars["user_id"]
     else:
-        user_id = session_vars.get("user_id", None)
+        user_id = session_vars.get("user_id", "")
 
     if intent == "GetID":
         return handel_get_id()
@@ -149,4 +143,4 @@ def generate_new_user_id():
     while new_user_id in unique_user_ids:
         new_user_id = randint(10000, 100000)
     unique_user_ids.append(new_user_id)
-    return new_user_id
+    return str(new_user_id)
