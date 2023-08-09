@@ -60,7 +60,6 @@ class Model:
                 )
             )
         predictions.sort(key=lambda x: x[1], reverse=True)
-        print(predictions[:100])
         top_movies = predictions[:n]
         top_movies = [self.data.get_movie_name(movie_id) for movie_id, _ in top_movies]
         return top_movies

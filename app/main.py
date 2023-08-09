@@ -101,7 +101,6 @@ def handle_new_user():
 def handle_existing_user(user_id):
     if user_id in unique_user_ids:
         recommendation = algo.recommend(user_id)
-        print(user_id)
         text = "Here are some movies you might like: \n"
         text += "\n".join(recommendation)
         return {"fulfillmentText": text}
