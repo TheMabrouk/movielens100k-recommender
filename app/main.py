@@ -8,8 +8,8 @@ from fastapi import FastAPI, Body
 from pydantic import BaseModel
 
 # from pyngrok import ngrok
-from model import update_model_with_ratings, recommend, select_random_movie, get_movie_name
-from model import unique_user_ids
+from .model import update_model_with_ratings, recommend, select_random_movie, get_movie_name
+from .model import unique_user_ids
 
 # from surprise import Dataset, Reader, KNNBasic
 # from surprise.model_selection import train_test_split
