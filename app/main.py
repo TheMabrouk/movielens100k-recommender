@@ -58,7 +58,6 @@ async def predict(queryResult: Request = Body(..., embed=True)):
         return handle_rate_movie(queryResult, session_vars["user_id"])
 
     elif intent == "Recommend-HasID":
-        print(session_vars["user_id"])
         return handle_recommendation(session_vars["user_id"])
 
     else:
@@ -90,6 +89,7 @@ def handle_new_user():
     new_user_id = generate_new_user_id()
     session_vars["user_id"] = new_user_id
     movie_id = data.select_random_movie()
+    session_vars["user_ratings"] = {}
     session_vars["user_ratings"][movie_id] = None
     return {
         "fulfillmentText": f"""Welcome! Your new user ID is {new_user_id}.
