@@ -23,7 +23,7 @@ session_vars = {"user_id": "", "user_ratings": {}}
 model_file_path = "app/data/trained_model.pkl"
 data_file_path = "app/data"
 data = Data(data_file_path)
-algo = Model(model_file_path, data).get_model()
+algo = Model(model_file_path, data)
 unique_user_ids = data.get_users_ids()
 
 class Intent(BaseModel):
@@ -107,20 +107,20 @@ def handle_existing_user(user_id):
 def handle_rate_movie(queryResult, user_id):
     if user_id:
         movie_id = data.select_random_movie()
-        user_ratings = session_vars["user_ratings"]
-        if len(user_ratings) == 0:
+        session_vars["user_ratings"]
+        if len(session_vars["user_ratings"]) == 0:
             rating = queryResult.parameters.get("rating")
             session_vars["user_ratings"][movie_id] = rating
             return {
                 "fulfillmentText": f"What do you think of {data.get_movie_name(movie_id)}?"
             }
-        elif len(user_ratings) < 5:
+        elif len(session_vars["user_ratings"]) < 5:
             rating = queryResult.parameters.get("rating")
             session_vars["user_ratings"][movie_id] = rating
             return {
                 "fulfillmentText": f"Next, what do you think of {data.get_movie_name(movie_id)}?"
             }
-        algo.update_model_with_ratings(user_id, user_ratings)
+        algo.update_model_with_ratings(user_id, session_vars["user_ratings"])
         return {
             "fulfillmentText": """Thank you for your ratings. Your preferences have been updated.
             Now whenever you give me you're ID I'll be able to recommend you movies."""

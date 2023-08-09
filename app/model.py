@@ -6,32 +6,32 @@ import pandas as pd
 import pickle
 import os
 
-class Model(KNNBasic):
+class Model():
     def __init__(self, model_file_path, data):
-        super().__init__()
         self.model_file_path = model_file_path
-        self.data = data    
+        self.data = data
+        self.model = self.get_model()
         
     # Reads the model from the file
     def get_model(self):
         if os.path.exists(self.model_file_path):
             with open(self.model_file_path, "rb") as file:
-                self = pickle.load(file)
-                return self
+                return pickle.load(file)
         else:
             return self.train_model()
 
     # Trains the model and saves it to a file 
     def train_model(self):
         trainset, _ = self.data.get_train_test()
-        self.fit(trainset)
+        self.model = KNNBasic()
+        self.model.fit(trainset)
         self.save_model()
-        return self
+        return self.model
     
     def save_model(self):
         with open(self.model_file_path, "wb") as file:
-            pickle.dump(self, file)
-        self = self.get_model()
+            pickle.dump(self.model, file)
+        self.model = self.get_model()
 
     def update_model_with_ratings(self, user_id, user_ratings):
         for movie_id, rating in user_ratings.items():
@@ -46,7 +46,7 @@ class Model(KNNBasic):
         
         self.data.save()
         trainset, _ = self.data.get_train_test()
-        self.fit(trainset)
+        self.model.fit(trainset)
         self.save_model()
     
     def recommend(self, user_id: int, n: int = 10):
@@ -55,7 +55,7 @@ class Model(KNNBasic):
             predictions.append(
                 (
                     movie_id,
-                    self.predict(user_id, movie_id).est,
+                    self.model.predict(user_id, movie_id).est,
                 )
             )
         predictions.sort(key=lambda x: x[1], reverse=True)
