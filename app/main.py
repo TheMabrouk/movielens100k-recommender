@@ -44,21 +44,18 @@ async def predict(queryResult: Request = Body(..., embed=True)):
     # user_id = queryResult.parameters.get("uid", session_vars["user_id"])
     if queryResult.parameters.get("uid"):
         session_vars["user_id"] = queryResult.parameters.get("uid", "")
-        user_id = session_vars["user_id"]
-    else:
-        user_id = session_vars.get("user_id", "")
 
     if intent == "GetID":
         return handel_get_id()
 
     elif intent == "CheckUserID":
-        return handel_check_user_id(queryResult, user_id)
+        return handel_check_user_id(queryResult, session_vars["user_id"])
 
     elif intent == "RateMovie":
-        return handle_rate_movie(queryResult, user_id)
+        return handle_rate_movie(queryResult, session_vars["user_id"])
 
     elif intent == "Recommend-HasID":
-        return handle_recommendation(user_id)
+        return handle_recommendation(session_vars["user_id"])
 
     else:
         return {"fulfillmentText": "I don't understand"}
@@ -66,7 +63,7 @@ async def predict(queryResult: Request = Body(..., embed=True)):
 
 # Checks for the ID in the session variables and returns it if it exists
 def handel_get_id():
-    if session_vars["user_id"]:
+    if session_vars["user_id"] != "":
         return {
                 "fulfillmentText": f"Your user ID is {int(session_vars['user_id'])}."
             }
@@ -95,7 +92,9 @@ def handle_new_user():
     global user_ratings
     user_ratings = {movie_id: None}
     return {
-        "fulfillmentText": f"Welcome! Your new user ID is {new_user_id}. Please rate the following movies on a scale of 1 to 5.\n\nFirstly, what do you think of {data.get_movie_name(movie_id)}?"
+        "fulfillmentText": f"""Welcome! Your new user ID is {new_user_id}. 
+        Please rate the following movies on a scale of 1 to 5.
+        Firstly, what do you think of {data.get_movie_name(movie_id)}?"""
     }
 
 def handle_existing_user(user_id):
@@ -124,7 +123,8 @@ def handle_rate_movie(queryResult, user_id):
             }
         algo.update_model_with_ratings(user_id, user_ratings)
         return {
-            "fulfillmentText": "Thank you for your ratings. Your preferences have been updated.\n\nNow whenever you give me you're ID I'll be able to recommend you movies."
+            "fulfillmentText": """Thank you for your ratings. Your preferences have been updated.
+            Now whenever you give me you're ID I'll be able to recommend you movies."""
         }
     else:
         return {"fulfillmentText": "Couldn't find your user ID during handling the rating."}
