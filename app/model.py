@@ -6,8 +6,9 @@ import pandas as pd
 import pickle
 import os
 
-class Model():
+class Model(KNNBasic):
     def __init__(self, model_file_path, data):
+        super().__init__()
         self.model_file_path = model_file_path
         self.data = data    
         
@@ -15,20 +16,21 @@ class Model():
     def get_model(self):
         if os.path.exists(self.model_file_path):
             with open(self.model_file_path, "rb") as file:
-                self.algo = pickle.load(file)
-                return self.algo
+                self = pickle.load(file)
+                return self
         else:
             return self.train_model()
 
     # Trains the model and saves it to a file 
     def train_model(self):
         trainset, _ = self.data.get_train_test()
-        self.algo = KNNBasic()
-        self.algo.fit(trainset)
+        self.fit(trainset)
+        self.save_model()
+        return self
+    
+    def save_model(self):
         with open(self.model_file_path, "wb") as file:
-            pickle.dump(self.algo, file)
-        return self.algo
-
+            pickle.dump(self, file)
 
 class Data():
     def __init__(self, data_file_path):
@@ -64,12 +66,13 @@ class Data():
     def get_unique_movie_ids(self):
         return self.data["movie_id"].unique().tolist()
 
-model_file_path = "app/trained_model.pkl"
+model_file_path = "app/data/trained_model.pkl"
 data_file_path = "app/data"
 
 movie_id_map = pd.read_csv(data_file_path + "/movie_id_map.csv")
 
 data = Data(data_file_path)
+
 algo = Model(model_file_path, data).get_model()
 
 unique_user_ids = data.get_users_ids()
@@ -89,8 +92,7 @@ def update_model_with_ratings(user_id, user_ratings):
     data.save()
     trainset, _ = data.get_train_test()
     algo.fit(trainset)
-    with open(model_file_path, "wb") as file:
-        pickle.dump(algo, file)
+    algo.save_model()
 
 
 def recommend(user_id: int, n: int = 10):
