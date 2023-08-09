@@ -19,7 +19,7 @@ app = FastAPI()
 # ).public_url
 # logger.info('ngrok tunnel "{}" -> "http://0.0.0.0:{}"'.format(public_url, 80))
 
-session_vars = {"user_id": ""}
+session_vars = {"user_id": "", "user_ratings": {}}
 model_file_path = "app/data/trained_model.pkl"
 data_file_path = "app/data"
 data = Data(data_file_path)
@@ -89,8 +89,6 @@ def handle_new_user():
     new_user_id = generate_new_user_id()
     session_vars["user_id"] = new_user_id
     movie_id = data.select_random_movie()
-    global user_ratings
-    user_ratings = {movie_id: None}
     return {
         "fulfillmentText": f"""Welcome! Your new user ID is {new_user_id}. 
         Please rate the following movies on a scale of 1 to 5.
@@ -109,15 +107,16 @@ def handle_existing_user(user_id):
 def handle_rate_movie(queryResult, user_id):
     if user_id:
         movie_id = data.select_random_movie()
-        if list(user_ratings.values())[0] == None:
+        user_ratings = session_vars["user_ratings"]
+        if len(user_ratings) == 0:
             rating = queryResult.parameters.get("rating")
-            user_ratings[list(user_ratings.keys())[0]] = rating
+            session_vars["user_ratings"][movie_id] = rating
             return {
                 "fulfillmentText": f"What do you think of {data.get_movie_name(movie_id)}?"
             }
         elif len(user_ratings) < 5:
             rating = queryResult.parameters.get("rating")
-            user_ratings[movie_id] = rating
+            session_vars["user_ratings"][movie_id] = rating
             return {
                 "fulfillmentText": f"Next, what do you think of {data.get_movie_name(movie_id)}?"
             }

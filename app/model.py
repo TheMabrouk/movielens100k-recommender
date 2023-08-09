@@ -31,6 +31,7 @@ class Model(KNNBasic):
     def save_model(self):
         with open(self.model_file_path, "wb") as file:
             pickle.dump(self, file)
+        self = self.get_model()
 
     def update_model_with_ratings(self, user_id, user_ratings):
         for movie_id, rating in user_ratings.items():
